@@ -18,22 +18,48 @@
         <p class="text-xl text-[#191f2f]">Mnemonic Phrase</p>
         <p class="text-base text-[#728a96]">{{ mnemonics.join(" ") }}</p>
       </div>
+
+      <div v-if="privateKey" class="mb-4">
+        <p class="text-xl text-[#191f2f]">Private Key (Hex):</p>
+        <p class="text-base text-[#728a96] break-all">{{ privateKey }}</p>
+      </div>
+
+      <div v-if="publicKey" class="mb-4">
+        <p class="text-xl text-[#191f2f] mt-2">Public Key (Hex):</p>
+        <p class="text-base text-[#728a96] break-all">{{ publicKey }}</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { mnemonicNew } from '@ton/crypto'
+import { WalletContractV4 } from '@ton/ton'
+import { mnemonicNew, mnemonicToPrivateKey } from '@ton/crypto'
 
 // Reactive variables
 const mnemonics = ref<string[]>([])
+const privateKey = ref<string>('')
+const publicKey = ref<string>('')
+const walletAddress = ref<string>('')
+
+// Convert Uint8Array to hex string
+const toHex = (bytes: Uint8Array): string =>
+    Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
 
 // Function to generate wallet keys
 const generateKeys = async () => {
   try {
     // Generate mnemonic
-    mnemonics.value = await mnemonicNew()
+    const mnemonicsData = await mnemonicNew()
+    mnemonics.value = mnemonicsData
+
+    // Generate key pair
+    const keyPair = await mnemonicToPrivateKey(mnemonicsData)
+    privateKey.value = toHex(keyPair.secretKey)
+    publicKey.value = toHex(keyPair.publicKey)
   } catch (error) {
     console.error('Error generating wallet:', error)
   }
