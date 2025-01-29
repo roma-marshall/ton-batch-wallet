@@ -28,6 +28,11 @@
         <p class="text-xl text-[#191f2f] mt-2">Public Key (Hex):</p>
         <p class="text-base text-[#728a96] break-all">{{ publicKey }}</p>
       </div>
+
+      <div v-if="walletAddress" class="mb-4">
+        <p class="text-xl text-[#191f2f]">Wallet Address</p>
+        <p class="text-base text-[#728a96] break-all">{{ walletAddress }}</p>
+      </div>
     </div>
   </div>
 </template>
@@ -60,6 +65,17 @@ const generateKeys = async () => {
     const keyPair = await mnemonicToPrivateKey(mnemonicsData)
     privateKey.value = toHex(keyPair.secretKey)
     publicKey.value = toHex(keyPair.publicKey)
+
+    // Create wallet contract
+    const workchain = 0
+    const wallet = WalletContractV4.create({
+      workchain,
+      publicKey: keyPair.publicKey,
+    })
+
+    // Get wallet address
+    walletAddress.value = wallet.address.toString()
+
   } catch (error) {
     console.error('Error generating wallet:', error)
   }
