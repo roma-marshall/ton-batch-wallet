@@ -1,37 +1,52 @@
 <template>
   <div class="min-h-screen bg-[#F7F9FB]">
     <div class="container mx-auto py-20">
-      <h1 class="text-3xl font-semibold text-center text-[#04060b] !mb-6">Wallet Generator</h1>
+      <h1 class="text-3xl font-semibold text-center text-[#04060b] !mb-6">TON Wallet Batch Generator</h1>
+
+      <div class="mb-4 text-center">
+        <label for="walletCount" class="block text-lg text-[#191f2f] mb-2">Number of wallets:</label>
+        <input
+            id="walletCount"
+            type="number"
+            min="1"
+            v-model.number="walletCount"
+            class="w-full border border-gray-300 rounded-lg px-4 py-2 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
 
       <div class="mt-6">
         <button
             @click="generateKeys"
-            class="text-white shadow-brand cursor-pointer border rounded-lg py-2 px-4 w-full bg-linear-to-r from-[#2D83EC]/90 to-[#1AC9FF]/90 hover:from-[#2D83EC] hover:to-[#1AC9FF] transition duration-300"
+            class="text-white shadow-brand cursor-pointer border rounded-lg py-2 px-4 w-full bg-gradient-to-r from-[#2D83EC]/90 to-[#1AC9FF]/90 hover:from-[#2D83EC] hover:to-[#1AC9FF] transition duration-300"
         >
-          Generate New Wallet
+          Generate Wallets
         </button>
       </div>
     </div>
 
-    <div class="container mx-auto">
-      <div v-if="mnemonics.length > 0" class="mb-4">
-        <p class="text-xl text-[#191f2f]">Mnemonic Phrase</p>
-        <p class="text-base text-[#728a96]">{{ mnemonics.join(" ") }}</p>
-      </div>
+    <div class="container mx-auto pb-20">
+      <div v-for="(wallet, index) in wallets" :key="index" class="mb-6 p-4 bg-white shadow rounded-lg">
+        <h2 class="text-xl font-semibold text-[#191f2f]">Wallet #{{ index + 1 }}</h2>
 
-      <div v-if="privateKey" class="mb-4">
-        <p class="text-xl text-[#191f2f]">Private Key (Hex):</p>
-        <p class="text-base text-[#728a96] break-all">{{ privateKey }}</p>
-      </div>
+        <div class="mt-2">
+          <p class="text-lg text-[#191f2f]">Mnemonic Phrase:</p>
+          <p class="text-sm text-[#728a96] break-all">{{ wallet.mnemonics.join(" ") }}</p>
+        </div>
 
-      <div v-if="publicKey" class="mb-4">
-        <p class="text-xl text-[#191f2f] mt-2">Public Key (Hex):</p>
-        <p class="text-base text-[#728a96] break-all">{{ publicKey }}</p>
-      </div>
+        <div class="mt-2">
+          <p class="text-lg text-[#191f2f]">Private Key (Hex):</p>
+          <p class="text-sm text-[#728a96] break-all">{{ wallet.privateKey }}</p>
+        </div>
 
-      <div v-if="walletAddress" class="mb-4">
-        <p class="text-xl text-[#191f2f]">Wallet Address</p>
-        <p class="text-base text-[#728a96] break-all">{{ walletAddress }}</p>
+        <div class="mt-2">
+          <p class="text-lg text-[#191f2f]">Public Key (Hex):</p>
+          <p class="text-sm text-[#728a96] break-all">{{ wallet.publicKey }}</p>
+        </div>
+
+        <div class="mt-2">
+          <p class="text-lg text-[#191f2f]">Wallet Address:</p>
+          <p class="text-sm text-[#728a96] break-all">{{ wallet.walletAddress }}</p>
+        </div>
       </div>
     </div>
   </div>
@@ -42,42 +57,43 @@ import { ref } from 'vue'
 import { WalletContractV4 } from '@ton/ton'
 import { mnemonicNew, mnemonicToPrivateKey } from '@ton/crypto'
 
-// Reactive variables
-const mnemonics = ref<string[]>([])
-const privateKey = ref<string>('')
-const publicKey = ref<string>('')
-const walletAddress = ref<string>('')
+const walletCount = ref<number>(1)
+const wallets = ref<{ mnemonics: string[]; privateKey: string; publicKey: string; walletAddress: string }[]>([])
 
-// Convert Uint8Array to hex string
+// convert Uint8Array to hex string
 const toHex = (bytes: Uint8Array): string =>
     Array.from(bytes)
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('')
 
-// Function to generate wallet keys
 const generateKeys = async () => {
-  try {
-    // Generate mnemonic
-    const mnemonicsData = await mnemonicNew()
-    mnemonics.value = mnemonicsData
+  wallets.value = [] // clear previous wallets
 
-    // Generate key pair
-    const keyPair = await mnemonicToPrivateKey(mnemonicsData)
-    privateKey.value = toHex(keyPair.secretKey)
-    publicKey.value = toHex(keyPair.publicKey)
+  for (let i = 0; i < walletCount.value; i++) {
+    try {
+      // generate mnemonic phrase
+      const mnemonicsData = await mnemonicNew()
 
-    // Create wallet contract
-    const workchain = 0
-    const wallet = WalletContractV4.create({
-      workchain,
-      publicKey: keyPair.publicKey,
-    })
+      // generate key pair
+      const keyPair = await mnemonicToPrivateKey(mnemonicsData)
+      const privateKeyHex = toHex(keyPair.secretKey)
+      const publicKeyHex = toHex(keyPair.publicKey)
 
-    // Get wallet address
-    walletAddress.value = wallet.address.toString()
+      // create wallet contract
+      const workchain = 0
+      const wallet = WalletContractV4.create({ workchain, publicKey: keyPair.publicKey })
+      const walletAddr = wallet.address.toString()
 
-  } catch (error) {
-    console.error('Error generating wallet:', error)
+      // store wallet details in the array
+      wallets.value.push({
+        mnemonics: mnemonicsData,
+        privateKey: privateKeyHex,
+        publicKey: publicKeyHex,
+        walletAddress: walletAddr,
+      })
+    } catch (error) {
+      console.error('Error generating wallet:', error)
+    }
   }
 }
 </script>
