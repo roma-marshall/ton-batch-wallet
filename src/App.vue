@@ -44,8 +44,12 @@
         </div>
 
         <div class="mt-2">
-          <p class="text-lg text-[#191f2f]">Wallet Address:</p>
-          <p class="text-sm text-[#728a96] break-all">{{ wallet.walletAddress }}</p>
+          <p class="text-lg text-[#191f2f]">Wallet Address v4:</p>
+          <p class="text-sm text-[#728a96] break-all">{{ wallet.walletAddressV4 }}</p>
+        </div>
+        <div class="mt-2">
+          <p class="text-lg text-[#191f2f]">Wallet Address v5:</p>
+          <p class="text-sm text-[#728a96] break-all">{{ wallet.walletAddressV5R1 }}</p>
         </div>
       </div>
     </div>
@@ -54,11 +58,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { WalletContractV4 } from '@ton/ton'
+import { WalletContractV4, WalletContractV5R1 } from '@ton/ton'
 import { mnemonicNew, mnemonicToPrivateKey } from '@ton/crypto'
 
 const walletCount = ref<number>(1)
-const wallets = ref<{ mnemonics: string[]; privateKey: string; publicKey: string; walletAddress: string }[]>([])
+const wallets = ref<{ mnemonics: string[]; privateKey: string; publicKey: string; walletAddressV4: string; walletAddressV5R1: string }[]>([])
 
 // convert Uint8Array to hex string
 const toHex = (bytes: Uint8Array): string =>
@@ -81,15 +85,18 @@ const generateKeys = async () => {
 
       // create wallet contract
       const workchain = 0
-      const wallet = WalletContractV4.create({ workchain, publicKey: keyPair.publicKey })
-      const walletAddr = wallet.address.toString()
+      const walletV4 = WalletContractV4.create({ workchain, publicKey: keyPair.publicKey })
+      const walletV5R1 = WalletContractV5R1.create({ workchain, publicKey: keyPair.publicKey })
+      const walletAddrV4 = walletV4.address.toString()
+      const walletAddrV5R1 = walletV5R1.address.toString()
 
       // store wallet details in the array
       wallets.value.push({
         mnemonics: mnemonicsData,
         privateKey: privateKeyHex,
         publicKey: publicKeyHex,
-        walletAddress: walletAddr,
+        walletAddressV4: walletAddrV4,
+        walletAddressV5R1: walletAddrV5R1,
       })
     } catch (error) {
       console.error('Error generating wallet:', error)
