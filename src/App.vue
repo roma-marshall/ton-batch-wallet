@@ -14,12 +14,20 @@
         />
       </div>
 
-      <div class="mt-6">
+      <div class="flex justify-center gap-4 mt-6">
         <button
             @click="generateKeys"
-            class="text-white shadow-brand cursor-pointer border rounded-lg py-2 px-4 w-full bg-gradient-to-r from-[#2D83EC]/90 to-[#1AC9FF]/90 hover:from-[#2D83EC] hover:to-[#1AC9FF] transition duration-300"
+            class="text-white shadow-brand cursor-pointer border rounded-lg py-2 px-4 bg-gradient-to-r from-[#2D83EC]/90 to-[#1AC9FF]/90 hover:from-[#2D83EC] hover:to-[#1AC9FF] transition duration-300"
         >
           Generate Wallets
+        </button>
+
+        <button
+            @click="downloadWallets"
+            :disabled="wallets.length === 0"
+            class="text-white shadow-brand cursor-pointer border rounded-lg py-2 px-4 bg-gradient-to-r from-[#1ABC9C]/90 to-[#2ECC71]/90 hover:from-[#1ABC9C] hover:to-[#2ECC71] transition duration-300 disabled:bg-gray-400"
+        >
+          Download JSON
         </button>
       </div>
     </div>
@@ -102,5 +110,18 @@ const generateKeys = async () => {
       console.error('Error generating wallet:', error)
     }
   }
+}
+
+// download wallets as JSON
+const downloadWallets = () => {
+  if (wallets.value.length === 0) return
+
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(wallets.value, null, 2))
+  const downloadAnchor = document.createElement("a")
+  downloadAnchor.setAttribute("href", dataStr)
+  downloadAnchor.setAttribute("download", "wallets.json")
+  document.body.appendChild(downloadAnchor)
+  downloadAnchor.click()
+  document.body.removeChild(downloadAnchor)
 }
 </script>
